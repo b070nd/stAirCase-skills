@@ -1,0 +1,17 @@
+{
+  "name": "staircase",
+  "owner": {
+    "name": "Botond Biro",
+    "url": "https://github.com/b070nd"
+  },
+  "description": "Skills for working with stAirCase: governed AI agent runs, approvals you can prove, and change certificates.",
+  "plugins": [
+    {
+      "name": "staircase-skills",
+      "source": "./",
+      "description": "Skills for using stAirCase well: set up a project, run a governed task, work while away, review and seal, verify in CI, investigate a run, change several repositories together, write policy rules.",
+      "category": "development",
+      "keywords": ["staircase", "ai-agents", "audit", "approvals", "governance"]
+    }
+  ]
+}
