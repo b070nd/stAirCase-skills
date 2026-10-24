@@ -9,6 +9,22 @@
   "homepage": "https://github.com/b070nd/stAirCase-skills",
   "repository": "https://github.com/b070nd/stAirCase-skills",
   "license": "MIT",
-  "keywords": ["staircase", "ai-agents", "audit", "approvals", "governance"],
-  "skills": []
+  "keywords": [
+    "staircase",
+    "ai-agents",
+    "audit",
+    "approvals",
+    "governance"
+  ],
+  "skills": [
+    "./skills/staircase",
+    "./skills/onboard-project",
+    "./skills/governed-task",
+    "./skills/away-run",
+    "./skills/review-and-seal",
+    "./skills/ci-verify",
+    "./skills/investigate-run",
+    "./skills/change-set",
+    "./skills/policy-rules"
+  ]
 }
