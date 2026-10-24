@@ -1,9 +1,11 @@
 ---
-name: ci-verify
+name: sc-ci-verify
 description: Require or check stAirCase change certificates in CI or on a pull request. Use when the user wants a required check that refuses commits an AI agent helped make without a valid certificate, sets up the GitHub Action or a GitLab job, wants to verify a commit or a range locally, asks what a CAL level means, or hits a failure of staircase verify.
 ---
 
 # Verify in CI
+
+Call the Skill tool with "sc-basics" first, unless it was loaded earlier in this conversation: it holds the rules every stAirCase skill follows.
 
 Every commit a governed run makes carries a **change certificate** (a signed statement of who helped, what was decided, and the assurance level) as a git note. Verifying checks that the certificate is valid, is about exactly that commit, reaches the level asked, and records no failed check.
 

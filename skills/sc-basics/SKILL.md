@@ -1,9 +1,9 @@
 ---
-name: staircase
-description: Orientation for stAirCase, the tool that puts a person's decision between an AI coding agent and a git repository and records it. Use when the user mentions stAirCase or staircase, governed or certified agent runs, approving what an agent changes, change certificates, or asks how to start with it. It names the other skills and the rules every one of them follows.
+name: sc-basics
+description: What stAirCase is and the rules every stAirCase skill follows. Use when the user mentions stAirCase or staircase, governed or certified agent runs, approving what an agent changes, change certificates, or asks how to start with it.
 ---
 
-# stAirCase
+# stAirCase basics
 
 stAirCase runs an AI coding agent in a separate worktree. Every change the agent wants to make comes to a person first. At the end, exactly the approved bytes are committed on a new branch, `staircase/run-N`, with a signed change certificate and a hash-chained audit record that anyone can verify. The person's own checkout is not touched while the agent works.
 
@@ -24,16 +24,7 @@ These read and change nothing: `staircase version`, `staircase doctor`, `stairca
 
 ## Which skill
 
-| The user wants to | Skill |
-|---|---|
-| set up a project: checks, scope, protected files, secrets, house rules | `onboard-project` |
-| have an agent make a change, deciding each step | `governed-task` |
-| start a task and leave, or deal with what away runs left | `away-run` |
-| certify changes made elsewhere: a cloud agent's pull request, or Cursor in their checkout | `review-and-seal` |
-| require or check change certificates in CI or on a pull request | `ci-verify` |
-| find out what happened in a run, or why one is stuck | `investigate-run` |
-| one piece of work across several repositories | `change-set` |
-| approve some kinds of change automatically by rule | `policy-rules` |
+The other skills pick themselves from what the user asks. For the whole map, tell the user to run `/sc-ask`. For a project that has not been set up for these skills, tell them to run `/sc-setup`.
 
 ## First, every time
 

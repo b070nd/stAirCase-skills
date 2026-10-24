@@ -1,9 +1,11 @@
 ---
-name: change-set
+name: sc-change-set
 description: Tie runs of several repositories into one piece of work and verify them together. Use when a change spans a backend, a middleware and a frontend, or any repositories of one product, when files are contracts between repositories (an API description, a schema) that need acknowledging, or when the user asks for a change set.
 ---
 
 # Change sets
+
+Call the Skill tool with "sc-basics" first, unless it was loaded earlier in this conversation: it holds the rules every stAirCase skill follows.
 
 A change across several repositories is several runs, one per repository. Each run stays what it always is: one repository, its own worktree, chain and certificate. A **change set** is an id that ties them together, plus one command that checks all of them. The set is a file in the workspace, never in a repository.
 
@@ -17,7 +19,7 @@ staircase changeset create checkout-v2
 
 ## 2. Start each run with the id
 
-The user runs one governed task per repository, in that repository (`governed-task`):
+The user runs one governed task per repository, in that repository (`sc-governed-task`):
 
 ```bash
 staircase claude --change-set checkout-v2 "add the order endpoint"

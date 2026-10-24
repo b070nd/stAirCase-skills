@@ -5,6 +5,9 @@ A skill that tells a person to run `staircase seal --alow x` is worse than no sk
 is resolved against the real CLI (`staircase <command> --help`): the command and each flag must exist. The binary must be the version in
 STAIRCASE_VERSION, the one the skills were written for.
 
+The set is also kept whole: every skill is named sc-<folder>, is listed in plugin.json, mentioned by the router sc-ask, linked from the
+README and has a docs page; a skill the assistant may not start itself (disable-model-invocation) is always written with the slash.
+
     python3 tools/check_skills.py [--root DIR] [--staircase PATH] [--allow-version-mismatch]
 """
 import argparse
@@ -22,6 +25,13 @@ DASHES = {"—": "em dash", "–": "en dash"}
 SHELL_FENCES = {"", "bash", "sh", "shell", "zsh"}
 OPERATORS = {"&&", "||", "|", ";", ">", ">>", "<", "2>", "2>&1", "&"}
 WORD = re.compile(r"[a-z][a-z0-9-]*")
+PREFIX = "sc-"
+ROUTER = "sc-ask"
+# the sections of a docs page, in the order they must come; the first, third and last two are required
+SECTIONS = ["## What it does", "## When to reach for it", "## Prerequisites", "## Common questions", "## It's working if", "## Where it fits"]
+REQUIRED = {"## What it does", "## When to reach for it", "## It's working if", "## Where it fits"}
+SKILL_REF = re.compile(r"`(/?)(sc-[a-z0-9-]+)`")
+SKILL_CALL = re.compile(r'Skill tool with "([^"]+)"')
 
 
 class Cli:
@@ -200,6 +210,55 @@ def link_problems(root, path, rel, text):
     return problems
 
 
+def reference_problems(rel, text, invoked, slash_rule):
+    """Check how a file names the skills. invoked maps each skill to True when only the person may start it.
+    In a skill (slash_rule), such a skill is always written with the slash, so it reads as something to tell the person."""
+    problems = []
+    for n, line in enumerate(text.split("\n"), 1):
+        for slash, name in SKILL_REF.findall(line):
+            if name not in invoked:
+                problems.append(f"{rel}:{n}: `{slash}{name}` is not a skill of this plugin")
+            elif slash_rule and invoked[name] and not slash:
+                problems.append(f"{rel}:{n}: {name} is started by the person only: write it `/{name}`")
+        for name in SKILL_CALL.findall(line):
+            if name not in invoked:
+                problems.append(f"{rel}:{n}: the Skill tool is told to call {name}, which is not a skill of this plugin")
+            elif invoked[name]:
+                problems.append(f"{rel}:{n}: the Skill tool cannot call {name}: only the person starts it, so tell them to run /{name}")
+    return problems
+
+
+def docs_problems(root, names):
+    """Each skill has a docs page with the same sections in the same order, and no page is left without its skill."""
+    problems = []
+    docs = os.path.join(root, "docs")
+    pages = sorted(f[:-3] for f in os.listdir(docs) if f.endswith(".md")) if os.path.isdir(docs) else []
+    for name in names:
+        if name not in pages:
+            problems.append(f"docs/{name}.md: the skill {name} has no docs page")
+    for page in pages:
+        if page not in names:
+            problems.append(f"docs/{page}.md: a docs page without a skill")
+            continue
+        rel = f"docs/{page}.md"
+        text = read(os.path.join(docs, page + ".md"))
+        headings = [(n, line.rstrip()) for n, line in enumerate(text.split("\n"), 1) if line.startswith("#") and not line.startswith("###")]
+        found = [h for _, h in headings]
+        for n, h in headings:
+            if h.startswith("# "):
+                problems.append(f"{rel}:{n}: a docs page has no H1: its title is its file name")
+            elif h not in SECTIONS:
+                problems.append(f"{rel}:{n}: {h!r} is not one of the sections: {', '.join(SECTIONS)}")
+        for h in sorted(REQUIRED - set(found)):
+            problems.append(f"{rel}: the section {h!r} is missing")
+        known = [h for h in found if h in SECTIONS]
+        if known != sorted(known, key=SECTIONS.index):
+            problems.append(f"{rel}: the sections are out of order, they come as: {', '.join(SECTIONS)}")
+        if page != ROUTER and "(sc-ask.md)" not in text:
+            problems.append(f"{rel}: 'Where it fits' must link the router: [sc-ask](sc-ask.md)")
+    return problems
+
+
 def check(root, binary, allow_version_mismatch=False):
     problems = []
     cli = Cli(binary)
@@ -219,35 +278,72 @@ def check(root, binary, allow_version_mismatch=False):
     for extra in sorted(listed - expected):
         problems.append(f".claude-plugin/plugin.json: {extra} is listed but has no SKILL.md")
 
+    metas, invoked = {}, {}
+    for name in names:
+        metas[name] = frontmatter(read(os.path.join(skills_dir, name, "SKILL.md"))) or {}
+        invoked[name] = metas[name].get("disable-model-invocation") == "true"
+
     for name in names:
         path = os.path.join(skills_dir, name, "SKILL.md")
         rel = f"skills/{name}/SKILL.md"
         text = read(path)
         meta = frontmatter(text)
+        if not name.startswith(PREFIX):
+            problems.append(f"{rel}: the folder must start with {PREFIX}")
         if meta is None:
             problems.append(f"{rel}:1: no frontmatter (--- name: ... description: ... ---)")
         else:
             if meta.get("name") != name:
                 problems.append(f"{rel}:2: the name is {meta.get('name')!r}, but the folder is {name!r}")
+            flag = meta.get("disable-model-invocation")
+            if flag not in (None, "true"):
+                problems.append(f"{rel}: disable-model-invocation is {flag!r}: it is either true or left out")
             desc = meta.get("description", "")
             if not desc:
                 problems.append(f"{rel}:3: no description")
             else:
-                if "Use when" not in desc:
+                if invoked[name] and "Use when" in desc:
+                    problems.append(f"{rel}:3: a skill only the person starts has a description for people: take out \"Use when ...\"")
+                if not invoked[name] and "Use when" not in desc:
                     problems.append(f"{rel}:3: the description must say when to use the skill (\"Use when ...\")")
                 if len(desc) > DESCRIPTION_LIMIT:
                     problems.append(f"{rel}:3: the description is {len(desc)} characters, the limit is {DESCRIPTION_LIMIT}")
         problems += prose_problems(rel, text)
         problems += link_problems(root, path, rel, text)
+        problems += reference_problems(rel, text, invoked, True)
         for line, cmd in markdown_commands(text):
             problems += check_command(cli, cmd, f"{rel}:{line}")
 
-    for extra in ("README.md", "CHANGELOG.md"):
-        p = os.path.join(root, extra)
+    if names:
+        if ROUTER not in names:
+            problems.append(f"skills/{ROUTER}/SKILL.md: the router is missing")
+        else:
+            router = read(os.path.join(skills_dir, ROUTER, "SKILL.md"))
+            for name in names:
+                if name != ROUTER and not re.search(r"(?<![\w-])" + re.escape(name) + r"(?![\w-])", router):
+                    problems.append(f"skills/{ROUTER}/SKILL.md: the router does not mention {name}")
+
+    readme = os.path.join(root, "README.md")
+    readme_text = read(readme) if os.path.isfile(readme) else ""
+    for name in names:
+        if f"(skills/{name}/SKILL.md)" not in readme_text:
+            problems.append(f"README.md: no link to skills/{name}/SKILL.md")
+
+    problems += docs_problems(root, names)
+
+    files = [("README.md", readme), ("CHANGELOG.md", os.path.join(root, "CHANGELOG.md"))]
+    docs = os.path.join(root, "docs")
+    if os.path.isdir(docs):
+        files += [(f"docs/{f}", os.path.join(docs, f)) for f in sorted(os.listdir(docs)) if f.endswith(".md")]
+    for rel, p in files:
         if os.path.isfile(p):
             text = read(p)
-            problems += prose_problems(extra, text)
-            problems += link_problems(root, p, extra, text)
+            problems += prose_problems(rel, text)
+            problems += link_problems(root, p, rel, text)
+            if rel != "CHANGELOG.md":
+                problems += reference_problems(rel, text, invoked, False)
+                for line, cmd in markdown_commands(text):
+                    problems += check_command(cli, cmd, f"{rel}:{line}")
     return problems
 
 
