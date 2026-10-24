@@ -7,7 +7,7 @@
   "description": "Skills for working with stAirCase: governed AI agent runs, approvals you can prove, and change certificates.",
   "plugins": [
     {
-      "name": "staircase-skills",
+      "name": "sc",
       "source": "./",
       "description": "Skills for using stAirCase well: set up a project, run a governed task, work while away, review and seal, verify in CI, investigate a run, change several repositories together, write policy rules.",
       "category": "development",

@@ -1,7 +1,7 @@
 {
-  "name": "staircase-skills",
+  "name": "sc",
   "version": "0.2.0",
-  "description": "Skills for using stAirCase well: set up a project, run a governed task, work while away, review and seal, verify in CI, investigate a run, change several repositories together, write policy rules. Every skill is named sc-<name>.",
+  "description": "Skills for using stAirCase well: set up a project, run a governed task, work while away, review and seal, verify in CI, investigate a run, change several repositories together, write policy rules. Every skill is /sc:<name>.",
   "author": {
     "name": "Botond Biro",
     "url": "https://github.com/b070nd"
@@ -17,16 +17,16 @@
     "governance"
   ],
   "skills": [
-    "./skills/sc-ask",
-    "./skills/sc-setup",
-    "./skills/sc-basics",
-    "./skills/sc-onboard-project",
-    "./skills/sc-governed-task",
-    "./skills/sc-away-run",
-    "./skills/sc-review-and-seal",
-    "./skills/sc-ci-verify",
-    "./skills/sc-investigate-run",
-    "./skills/sc-change-set",
-    "./skills/sc-policy-rules"
+    "./skills/ask",
+    "./skills/setup",
+    "./skills/basics",
+    "./skills/onboard-project",
+    "./skills/governed-task",
+    "./skills/away-run",
+    "./skills/review-and-seal",
+    "./skills/ci-verify",
+    "./skills/investigate-run",
+    "./skills/change-set",
+    "./skills/policy-rules"
   ]
 }
