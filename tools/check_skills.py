@@ -5,8 +5,9 @@ A skill that tells a person to run `staircase seal --alow x` is worse than no sk
 is resolved against the real CLI (`staircase <command> --help`): the command and each flag must exist. The binary must be the version in
 STAIRCASE_VERSION, the one the skills were written for.
 
-The set is also kept whole: every skill is named sc-<folder>, is listed in plugin.json, mentioned by the router sc-ask, linked from the
-README and has a docs page; a skill the assistant may not start itself (disable-model-invocation) is always written with the slash.
+The set is also kept whole: the plugin is named sc, so a skill is sc:<folder>; it is listed in plugin.json, mentioned by the router sc:ask,
+linked from the README and has a docs page; a skill the assistant may not start itself (disable-model-invocation) is always written
+with the slash.
 
     python3 tools/check_skills.py [--root DIR] [--staircase PATH] [--allow-version-mismatch]
 """
@@ -25,12 +26,12 @@ DASHES = {"—": "em dash", "–": "en dash"}
 SHELL_FENCES = {"", "bash", "sh", "shell", "zsh"}
 OPERATORS = {"&&", "||", "|", ";", ">", ">>", "<", "2>", "2>&1", "&"}
 WORD = re.compile(r"[a-z][a-z0-9-]*")
-PREFIX = "sc-"
-ROUTER = "sc-ask"
+PLUGIN = "sc"
+ROUTER = "ask"
 # the sections of a docs page, in the order they must come; the first, third and last two are required
 SECTIONS = ["## What it does", "## When to reach for it", "## Prerequisites", "## Common questions", "## It's working if", "## Where it fits"]
 REQUIRED = {"## What it does", "## When to reach for it", "## It's working if", "## Where it fits"}
-SKILL_REF = re.compile(r"`(/?)(sc-[a-z0-9-]+)`")
+SKILL_REF = re.compile(r"`(/?)" + PLUGIN + r":([a-z0-9-]+)`")
 SKILL_CALL = re.compile(r'Skill tool with "([^"]+)"')
 
 
@@ -216,15 +217,19 @@ def reference_problems(rel, text, invoked, slash_rule):
     problems = []
     for n, line in enumerate(text.split("\n"), 1):
         for slash, name in SKILL_REF.findall(line):
+            full = f"{PLUGIN}:{name}"
             if name not in invoked:
-                problems.append(f"{rel}:{n}: `{slash}{name}` is not a skill of this plugin")
+                problems.append(f"{rel}:{n}: `{slash}{full}` is not a skill of this plugin")
             elif slash_rule and invoked[name] and not slash:
-                problems.append(f"{rel}:{n}: {name} is started by the person only: write it `/{name}`")
-        for name in SKILL_CALL.findall(line):
-            if name not in invoked:
-                problems.append(f"{rel}:{n}: the Skill tool is told to call {name}, which is not a skill of this plugin")
+                problems.append(f"{rel}:{n}: {full} is started by the person only: write it `/{full}`")
+        for called in SKILL_CALL.findall(line):
+            name = called[len(PLUGIN) + 1:] if called.startswith(PLUGIN + ":") else None
+            if name is None:
+                problems.append(f"{rel}:{n}: the Skill tool is told to call {called}: use the full name, {PLUGIN}:<skill>")
+            elif name not in invoked:
+                problems.append(f"{rel}:{n}: the Skill tool is told to call {called}, which is not a skill of this plugin")
             elif invoked[name]:
-                problems.append(f"{rel}:{n}: the Skill tool cannot call {name}: only the person starts it, so tell them to run /{name}")
+                problems.append(f"{rel}:{n}: the Skill tool cannot call {called}: only the person starts it, so tell them to run /{called}")
     return problems
 
 
@@ -254,8 +259,8 @@ def docs_problems(root, names):
         known = [h for h in found if h in SECTIONS]
         if known != sorted(known, key=SECTIONS.index):
             problems.append(f"{rel}: the sections are out of order, they come as: {', '.join(SECTIONS)}")
-        if page != ROUTER and "(sc-ask.md)" not in text:
-            problems.append(f"{rel}: 'Where it fits' must link the router: [sc-ask](sc-ask.md)")
+        if page != ROUTER and f"({ROUTER}.md)" not in text:
+            problems.append(f"{rel}: 'Where it fits' must link the router: [{PLUGIN}:{ROUTER}]({ROUTER}.md)")
     return problems
 
 
@@ -271,7 +276,16 @@ def check(root, binary, allow_version_mismatch=False):
         problems.append(f"STAIRCASE_VERSION: the skills are written for {want}, but the staircase on this machine says {got!r}")
 
     with open(os.path.join(root, ".claude-plugin", "plugin.json"), encoding="utf-8") as f:
-        listed = set(json.load(f).get("skills", []))
+        manifest = json.load(f)
+    listed = set(manifest.get("skills", []))
+    if manifest.get("name") != PLUGIN:
+        problems.append(f".claude-plugin/plugin.json: the plugin is named {manifest.get('name')!r}: it must be {PLUGIN!r}, so a skill reads {PLUGIN}:<name>")
+    market = os.path.join(root, ".claude-plugin", "marketplace.json")
+    if os.path.isfile(market):
+        with open(market, encoding="utf-8") as f:
+            entries = [x.get("name") for x in json.load(f).get("plugins", [])]
+        if entries != [PLUGIN]:
+            problems.append(f".claude-plugin/marketplace.json: it lists the plugins {entries}, it must list only {PLUGIN!r}")
     expected = {f"./skills/{n}" for n in names}
     for missing in sorted(expected - listed):
         problems.append(f".claude-plugin/plugin.json: the skill {missing} is not listed in plugin.json")
@@ -288,8 +302,6 @@ def check(root, binary, allow_version_mismatch=False):
         rel = f"skills/{name}/SKILL.md"
         text = read(path)
         meta = frontmatter(text)
-        if not name.startswith(PREFIX):
-            problems.append(f"{rel}: the folder must start with {PREFIX}")
         if meta is None:
             problems.append(f"{rel}:1: no frontmatter (--- name: ... description: ... ---)")
         else:
@@ -320,8 +332,8 @@ def check(root, binary, allow_version_mismatch=False):
         else:
             router = read(os.path.join(skills_dir, ROUTER, "SKILL.md"))
             for name in names:
-                if name != ROUTER and not re.search(r"(?<![\w-])" + re.escape(name) + r"(?![\w-])", router):
-                    problems.append(f"skills/{ROUTER}/SKILL.md: the router does not mention {name}")
+                if name != ROUTER and not re.search(r"(?<![\w-])" + re.escape(f"{PLUGIN}:{name}") + r"(?![\w-])", router):
+                    problems.append(f"skills/{ROUTER}/SKILL.md: the router does not mention {PLUGIN}:{name}")
 
     readme = os.path.join(root, "README.md")
     readme_text = read(readme) if os.path.isfile(readme) else ""
