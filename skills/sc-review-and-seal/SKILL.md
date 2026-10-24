@@ -1,11 +1,13 @@
 ---
-name: review-and-seal
+name: sc-review-and-seal
 description: Certify changes that an AI agent made outside stAirCase, so only the files a person approves are committed. Use when the user has a cloud agent's pull request or branch (Copilot coding agent, Codex in the cloud) to review, or an agent that edits their own checkout (Cursor, an IDE assistant) and wants to commit only what they approve, with a change certificate.
 ---
 
 # Review after, and seal
 
-Some agents work where stAirCase cannot decide their steps before they happen. stAirCase can still make sure that only the files the user approves are committed, and certify it. Both routes reach **CAL 2**: every byte that lands was decided, but nobody governed what the agent did on its own machine. For CAL 3 the agent has to run through stAirCase (`governed-task`).
+Call the Skill tool with "sc-basics" first, unless it was loaded earlier in this conversation: it holds the rules every stAirCase skill follows.
+
+Some agents work where stAirCase cannot decide their steps before they happen. stAirCase can still make sure that only the files the user approves are committed, and certify it. Both routes reach **CAL 2**: every byte that lands was decided, but nobody governed what the agent did on its own machine. For CAL 3 the agent has to run through stAirCase (`sc-governed-task`).
 
 ## A cloud agent's branch or pull request: `staircase review`
 
@@ -29,7 +31,7 @@ staircase seal -m "Add the health endpoint" --by "Cursor" --check "go test ./...
 staircase attach --off
 ```
 
-`attach` installs a pre-commit hook that refuses a plain `git commit` and says to seal. It is not a wall: `git commit --no-verify` gets through, which is why CI (`ci-verify`) is the second line. Nothing of stAirCase is written into the repository's files: if `core.hooksPath` points inside the working tree (a `.husky` folder, say), `attach` refuses and names the setting.
+`attach` installs a pre-commit hook that refuses a plain `git commit` and says to seal. It is not a wall: `git commit --no-verify` gets through, which is why CI (`sc-ci-verify`) is the second line. Nothing of stAirCase is written into the repository's files: if `core.hooksPath` points inside the working tree (a `.husky` folder, say), `attach` refuses and names the setting.
 
 `seal` takes exactly what is staged. Each staged file comes to the person, and the current branch moves to one new commit with the approved files, the message, the `Assisted-by:` trailer and a certificate. Rejected changes are not committed and not thrown away: they stay in the working files. Edits that were not staged are left alone. If the branch moved while the person was deciding, it is not touched and the certified commit stays on `staircase/run-N`. `seal` takes `--allow` like the other commands.
 

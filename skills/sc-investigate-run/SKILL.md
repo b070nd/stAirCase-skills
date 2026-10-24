@@ -1,9 +1,11 @@
 ---
-name: investigate-run
+name: sc-investigate-run
 description: Find out what happened in a stAirCase run, or why one is stuck, failed, halted or looks wrong. Use when a run ended FAILED, shows blocked or partial, was halted for drift, was interrupted or killed, left a worktree with unapproved changes, says the audit chain is broken, or the user asks what was decided and by whom. Also for staircase doctor warnings.
 ---
 
 # Investigate a run
+
+Call the Skill tool with "sc-basics" first, unless it was loaded earlier in this conversation: it holds the rules every stAirCase skill follows.
 
 Everything here reads. You look, explain, and give the user the command to run. You never repair a run's records.
 
@@ -29,7 +31,7 @@ Redact secrets before you show any of it.
 | Outcome | What to do |
 |---|---|
 | running | its process holds the run. Wait, or ask the user whether it is still alive |
-| awaiting review | the person decides: `staircase decide <run>` (see `away-run`) |
+| awaiting review | the person decides: `staircase decide <run>` (the user can run `/sc-away-run` to be walked through it) |
 | blocked or partial | read the reason; the next table has the usual ones |
 | failed | `inspect log` shows which checks failed, which review was rejected, or which file differed |
 | no change | nothing was approved or parked and the checks pass on the unchanged tree: nothing to deliver |

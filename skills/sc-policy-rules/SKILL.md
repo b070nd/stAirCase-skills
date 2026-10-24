@@ -1,15 +1,18 @@
 ---
-name: policy-rules
-description: Write, test and sign the stAirCase policy.json so some kinds of change are approved or rejected automatically. Use when the user wants rules that approve small or safe changes without asking, wants to reject changes from an agent or to a path, asks what a policy rule can and cannot decide, wants to test a policy against past runs, or hits a policy load or integrity error.
+name: sc-policy-rules
+description: Write, test and sign the policy that approves or rejects some kinds of change by rule.
+disable-model-invocation: true
 ---
 
 # Policy rules
+
+Call the Skill tool with "sc-basics" first, unless it was loaded earlier in this conversation: it holds the rules every stAirCase skill follows.
 
 A policy is `policy.json` in the workspace (`~/.staircase-workspace/policy.json` by default). Rules are checked in order and the first that matches decides. A proposal no rule matches goes on to the validator models or to a person. Rules approve or reject; they never read a change, they match what stAirCase derived from it.
 
 ## What a rule can and cannot do
 
-- Shell commands and tool calls are **never** approved by a rule. The one exception is a command the user declared for an away run (`away-run`).
+- Shell commands and tool calls are **never** approved by a rule. The one exception is a command the user declared for an away run (`/sc-away-run`).
 - Changes to the paths where checks are defined (protected) and to sensitive paths (CI and build files, dependency files, `.env` files, shell scripts, `CODEOWNERS`) always go to a person, whatever a rule says. A rule cannot widen that, and a `reject` rule does not catch them first: they are parked or asked.
 - A rule that matches is the user's decision made in advance, so write each one narrowly and say what it will approve.
 
@@ -45,7 +48,7 @@ staircase policy sign
 staircase policy verify
 ```
 
-A signed policy is checked when a run starts: a file changed after signing stops the run (`policy integrity check failed`; if the user made the change, sign again). Delivery by policy needs a signed policy (`away-run`).
+A signed policy is checked when a run starts: a file changed after signing stops the run (`policy integrity check failed`; if the user made the change, sign again). Delivery by policy needs a signed policy (`/sc-away-run`).
 
 ## What to tell the user
 

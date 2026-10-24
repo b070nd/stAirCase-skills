@@ -1,9 +1,11 @@
 ---
-name: onboard-project
+name: sc-onboard-project
 description: Set stAirCase up for a repository, your own or a client's, so every run on it uses the right checks, scope and protections without putting anything into the repository. Use when the user wants to start using stAirCase on a project, set what a run may touch or must check, protect test files or contract files, keep secrets away from agents, keep stAirCase out of a client's repo, or fix a project's profile.
 ---
 
 # Onboard a project
+
+Call the Skill tool with "sc-basics" first, unless it was loaded earlier in this conversation: it holds the rules every stAirCase skill follows.
 
 The goal is a **project profile** in the workspace that holds what is true of the repository for every run. Nothing is written into the repository.
 
@@ -64,4 +66,4 @@ After the first run, `staircase case briefing <case-id>` prints exactly what an 
 
 ## Next
 
-`governed-task` for the first run. For several repositories of one product, `change-set`.
+`sc-governed-task` for the first run. For several repositories of one product, `sc-change-set`.
